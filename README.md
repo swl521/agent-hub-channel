@@ -1,163 +1,181 @@
 # Agent Hub Channel
 
-Claude Code 多 CLI 会话调度系统。通过 MCP Channel 实现 CLI 间通信和手机端 Dispatch 远程控制。
+Multi-CLI session dispatch system for [Claude Code](https://claude.ai/code). Control multiple Claude Code CLI sessions from your phone (Dispatch) or other CLI sessions via MCP Channel protocol.
 
-## 架构
+## Architecture
 
 ```
 ┌─────────────┐     curl POST /send      ┌──────────────────┐
 │  Dispatch   │ ────────────────────────> │  agent-hub MCP   │
-│  (手机端)    │                           │  (HTTP + Channel)│
+│  (mobile)   │                           │  (HTTP + Channel)│
 └─────────────┘                           └────────┬─────────┘
        ▲                                           │
-       │ 读取 responses/{id}.json      notifications/claude/channel
+       │  read responses/{id}.json     notifications/claude/channel
        │                                           │
        │                                           ▼
        │                                  ┌──────────────────┐
-       │                                  │  Claude CLI 会话  │
-       │                                  │  (执行任务)       │
+       │                                  │  Claude CLI      │
+       │                                  │  (execute task)  │
        │                                  └────────┬─────────┘
-       │                                           │
        │                              hub_reply(msg_id, result)
        │                                           │
-       │                                           ▼
        └──────────────────────────────── responses/{id}.json
 ```
 
-## 文件结构
+## Installation
 
-```
-~/program/agent-hub-channel/        # 源码目录
-├── index.ts                        # MCP Server 主程序
-├── package.json                    # 依赖配置
-├── install.sh                      # 一键安装脚本
-├── dispatch-instructions.md        # Dispatch 端配置说明
-└── README.md                       # 本文件
-
-~/.claude/agent-hub/                # 运行时目录
-├── registry.json                   # 会话注册表
-└── responses/                      # 回复文件目录
-    └── {msg_id}.json               # 各条消息的回复
-
-~/.mcp.json                         # MCP Server 注册
-~/.claude/settings.local.json       # Claude Code 本地设置
-~/.zshrc                            # shell alias
-```
-
-## 权限分布
-
-```
-┌──────────────────────────────────────────────────────────────────┐
-│                        权限层级结构                               │
-├──────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  ~/.mcp.json                                                     │
-│  ├── 声明 agent-hub 为全局 MCP Server                            │
-│  └── 指定启动命令: bun ~/program/agent-hub-channel/index.ts      │
-│                                                                  │
-│  ~/.claude/settings.local.json                                   │
-│  ├── enabledMcpjsonServers: ["agent-hub"]                        │
-│  │   └── 允许加载 agent-hub MCP Server                           │
-│  └── enableAllProjectMcpServers: true                            │
-│      └── 所有项目目录下的 MCP 都自动启用                           │
-│                                                                  │
-│  ~/.zshrc (alias)                                                │
-│  └── claude → claude --dangerously-load-development-channels     │
-│               server:agent-hub                                   │
-│      └── 每次启动 CLI 自动加载 channel 能力                       │
-│          (不加此 flag，MCP 工具可用但 channel 通知不生效)          │
-│                                                                  │
-│  ~/.claude/CLAUDE.md                                             │
-│  └── Agent Hub 操作说明                                          │
-│      └── CLI 端：查看会话、发指令、接收指令的操作方式              │
-│                                                                  │
-│  Dispatch → Customize                                            │
-│  └── Agent Hub 操作说明（同上，但面向 Dispatch AI）               │
-│      └── 教 Dispatch 如何读 registry、curl 发指令、轮询回复       │
-│                                                                  │
-├──────────────────────────────────────────────────────────────────┤
-│                     MCP 工具权限 (每个 CLI)                       │
-├──────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  hub_reply(msg_id, result)                                       │
-│  ├── 写文件: ~/.claude/agent-hub/responses/{msg_id}.json         │
-│  └── 更新 registry.json 状态为 idle                              │
-│                                                                  │
-│  hub_set_name(name)                                              │
-│  └── 修改 registry.json 中的会话名                                │
-│                                                                  │
-│  hub_status(status)                                              │
-│  └── 修改 registry.json 中的会话状态                              │
-│                                                                  │
-├──────────────────────────────────────────────────────────────────┤
-│                     HTTP 端点 (每个 CLI)                          │
-├──────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  GET  /status          → 返回会话信息 (名字/端口/状态)           │
-│  POST /send            → 注入指令到 CLI (需要 command + msg_id)  │
-│  GET  /responses/:id   → 查询回复是否就绪                        │
-│                                                                  │
-│  监听: 127.0.0.1 only (本机访问)                                 │
-│  端口: 18001-18099 (自动分配)                                    │
-│                                                                  │
-└──────────────────────────────────────────────────────────────────┘
-```
-
-## 安装
+### Method 1: npx (Recommended)
 
 ```bash
+npx agent-hub-channel init
+```
+
+Then add the shell alias:
+
+```bash
+echo 'alias claude="claude --dangerously-load-development-channels server:agent-hub"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+### Method 2: Git Clone
+
+```bash
+git clone https://github.com/swl521/agent-hub-channel.git ~/program/agent-hub-channel
 cd ~/program/agent-hub-channel
 chmod +x install.sh
 ./install.sh
 source ~/.zshrc
 ```
 
-## 安装后验证
+### Method 3: Claude Code Plugin
 
-### 步骤 1: 启动 CLI
 ```bash
-claude    # alias 自动加载 agent-hub channel
+claude /install github:swl521/agent-hub-channel
 ```
 
-### 步骤 2: 检查注册
+Then add the shell alias:
+
 ```bash
-cat ~/.claude/agent-hub/registry.json
-# 应看到你的会话信息
+echo 'alias claude="claude --dangerously-load-development-channels server:agent-hub"' >> ~/.zshrc
+source ~/.zshrc
 ```
 
-### 步骤 3: 测试发指令（从另一个终端）
-```bash
-# 查状态
-curl -s http://127.0.0.1:18001/status
+## Prerequisites
 
-# 发指令
-curl -s -X POST http://127.0.0.1:18001/send \
-  -H "Content-Type: application/json" \
-  -d '{"command":"say hello and reply with hub_reply","msg_id":"test1"}'
+- **[bun](https://bun.sh/)** >= 1.0 — Runtime
+- **[Claude Code CLI](https://claude.ai/code)** >= 2.1.80 — Channel support
+- **macOS / Linux** — Windows not tested
 
-# 等几秒后查回复
-cat ~/.claude/agent-hub/responses/test1.json
+## Quick Start
+
+1. Install using any method above
+2. Start Claude Code:
+   ```bash
+   claude    # alias auto-loads agent-hub channel
+   ```
+3. Verify registration:
+   ```bash
+   cat ~/.claude/agent-hub/registry.json
+   ```
+4. Check session status:
+   ```bash
+   npx agent-hub-channel status
+   ```
+
+## How It Works
+
+1. Each CLI session auto-registers to `~/.claude/agent-hub/registry.json` on startup
+2. Each session listens on a local HTTP port (18001-18099, 127.0.0.1 only)
+3. External systems send commands via `POST /send` with `{command, msg_id}`
+4. The MCP Channel injects the command into the CLI conversation
+5. CLI executes the task and calls `hub_reply` to write response to `responses/{msg_id}.json`
+6. The sender polls `responses/{msg_id}.json` to get the result
+
+## MCP Tools
+
+Each CLI session with agent-hub loaded exposes:
+
+| Tool | Description |
+|------|-------------|
+| `hub_reply(msg_id, result)` | Reply to a remote command |
+| `hub_set_name(name)` | Set session display name |
+| `hub_status(status)` | Update status: `idle` / `busy` / `done` |
+
+## HTTP Endpoints
+
+Each session listens on `127.0.0.1:{port}`:
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/status` | Session info (name, port, status) |
+| `POST` | `/send` | Inject command `{command, msg_id}` |
+| `GET` | `/responses/:id` | Check if response is ready |
+
+## Dispatch (Mobile) Setup
+
+To control CLI sessions from your phone via Claude Desktop Dispatch, add the following to Dispatch's **Customize** section:
+
+<details>
+<summary>Click to expand Dispatch instructions</summary>
+
+```
+## Agent Hub
+
+My Mac runs multiple Claude CLI sessions managed by agent-hub.
+
+### View all CLI sessions
+Read ~/.claude/agent-hub/registry.json and list each session's name, port, directory, and status.
+
+### Send command to a CLI (when I say "@name do something")
+1. Read ~/.claude/agent-hub/registry.json to find the target session's port
+2. Generate a random msg_id (8 alphanumeric characters)
+3. Run:
+   curl -s -X POST http://127.0.0.1:{port}/send -H "Content-Type: application/json" -d '{"command":"the instruction","msg_id":"the_msg_id"}'
+4. Confirm the response contains {"status":"delivered"}
+5. Every 5 seconds, check: cat ~/.claude/agent-hub/responses/{msg_id}.json
+6. When the file exists, read it and return the result field to me
+7. If no response within 90 seconds, report timeout
+
+### Check a CLI's status
+curl -s http://127.0.0.1:{port}/status
 ```
 
-### 步骤 4: 配置 Dispatch
-把 `dispatch-instructions.md` 的内容复制到 Dispatch 的 Customize 中。
+</details>
 
-### 步骤 5: 手机端测试
-在 Dispatch 中发送 "查看我的 CLI" 或 "@会话名 做某事"。
+## File Structure
 
-## 故障排查
+```
+~/.claude/agent-hub/                # Runtime (auto-created)
+├── registry.json                   # Session registry
+└── responses/                      # Response files
+    └── {msg_id}.json
 
-| 问题 | 原因 | 解决 |
-|------|------|------|
-| CLI 不在 registry 中 | 没用 alias 启动 | `source ~/.zshrc` 后重启 `claude` |
-| 指令送达但无回复 | channel 未加载 | 确认用 alias 启动，不是直接 `/usr/local/bin/claude` |
-| 端口连接拒绝 | 会话已退出，注册残留 | 重启 CLI，自动清理死进程 |
-| Dispatch 不识别指令 | Customize 未配置 | 复制 dispatch-instructions.md 内容 |
-| 权限弹窗卡住 | MCP 工具首次使用 | 去 CLI 终端窗口点允许 |
-| 同名会话冲突 | 同目录开了多个 CLI | 自动加后缀，或用 hub_set_name 改名 |
+~/.mcp.json                         # MCP server declaration
+~/.claude/settings.local.json       # Claude Code settings
+~/.zshrc                            # Shell alias
+```
 
-## 依赖
+## Configuration Layers
 
-- **bun** >= 1.0 — 运行时
-- **Claude Code CLI** >= 2.1.80 — 支持 channel 功能
-- **@modelcontextprotocol/sdk** ^1.12.0 — MCP 协议
+| Layer | File | Purpose |
+|-------|------|---------|
+| MCP Server | `~/.mcp.json` | Declares agent-hub as MCP server |
+| Settings | `~/.claude/settings.local.json` | Enables agent-hub MCP |
+| Channel | `~/.zshrc` alias | `--dangerously-load-development-channels server:agent-hub` |
+| CLI Guide | `~/.claude/CLAUDE.md` | Teaches CLI how to use agent-hub |
+| Dispatch | Dispatch Customize | Teaches Dispatch how to call agent-hub |
+
+## Troubleshooting
+
+| Problem | Cause | Fix |
+|---------|-------|-----|
+| CLI not in registry | Not started with alias | `source ~/.zshrc`, restart `claude` |
+| Command delivered but no reply | Channel not loaded | Ensure alias has `server:agent-hub` |
+| Connection refused | Session exited, stale registry | Restart CLI, dead sessions auto-cleaned |
+| Dispatch doesn't understand | Customize not configured | Copy Dispatch instructions above |
+| Permission popup blocks reply | First MCP tool use | Approve in CLI terminal window |
+| Duplicate session names | Multiple CLIs in same directory | Auto-suffixed, or use `hub_set_name` |
+
+## License
+
+MIT

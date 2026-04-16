@@ -1,12 +1,30 @@
 {
   "name": "agent-hub-channel",
   "version": "0.1.0",
-  "description": "Claude Code Channel plugin for multi-CLI session dispatch",
+  "description": "Claude Code multi-CLI session dispatch system via MCP Channel",
   "type": "module",
   "main": "index.ts",
+  "bin": {
+    "agent-hub-channel": "./bin/cli.mjs"
+  },
   "scripts": {
     "start": "bun run index.ts"
   },
+  "keywords": [
+    "claude-code",
+    "mcp",
+    "channel",
+    "multi-session",
+    "dispatch",
+    "agent"
+  ],
+  "author": "swl521",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/swl521/agent-hub-channel.git"
+  },
+  "homepage": "https://github.com/swl521/agent-hub-channel",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.0"
   }

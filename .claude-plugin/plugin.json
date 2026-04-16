@@ -1,0 +1,20 @@
+{
+  "name": "agent-hub-channel",
+  "version": "0.1.0",
+  "description": "Multi-CLI session dispatch system via MCP Channel — control multiple Claude Code sessions from Dispatch or other CLIs",
+  "author": {
+    "name": "swl521",
+    "url": "https://github.com/swl521"
+  },
+  "homepage": "https://github.com/swl521/agent-hub-channel",
+  "repository": "https://github.com/swl521/agent-hub-channel",
+  "license": "MIT",
+  "keywords": [
+    "claude-code",
+    "mcp",
+    "channel",
+    "dispatch",
+    "multi-session",
+    "remote-control"
+  ]
+}

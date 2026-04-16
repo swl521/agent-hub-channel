@@ -1,0 +1,42 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "agent-hub-channel",
+  "description": "Multi-CLI session dispatch — control multiple Claude Code CLIs from your phone or other sessions",
+  "owner": {
+    "name": "swl521",
+    "email": "miles@sksupre.com"
+  },
+  "metadata": {
+    "description": "Route commands to any running Claude Code CLI via MCP Channel protocol"
+  },
+  "plugins": [
+    {
+      "name": "agent-hub-channel",
+      "source": "./",
+      "description": "Multi-CLI dispatch system using MCP Channel. Each CLI auto-registers on startup. Send commands from Dispatch (mobile) or other CLIs. Supports session naming, status tracking, and async response collection.",
+      "version": "0.1.0",
+      "author": {
+        "name": "swl521",
+        "email": "miles@sksupre.com"
+      },
+      "homepage": "https://github.com/swl521/agent-hub-channel",
+      "repository": "https://github.com/swl521/agent-hub-channel",
+      "license": "MIT",
+      "keywords": [
+        "mcp",
+        "channel",
+        "dispatch",
+        "multi-session"
+      ],
+      "category": "workflow",
+      "tags": [
+        "mcp",
+        "channel",
+        "dispatch",
+        "remote-control",
+        "multi-cli"
+      ],
+      "strict": false
+    }
+  ]
+}
