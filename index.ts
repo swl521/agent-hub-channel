@@ -311,13 +311,15 @@ function startHttpServer(port: number) {
     }
 
     // POST /send — inject command into CLI session
+    // Optional: { "wait": true, "timeout": 120 } to block until response is ready
     if (req.method === "POST" && url.pathname === "/send") {
       let body = "";
       req.on("data", (chunk) => (body += chunk));
       req.on("end", async () => {
         try {
-          const { command, msg_id } = JSON.parse(body);
+          const { command, msg_id, wait, timeout } = JSON.parse(body);
           const id = msg_id || crypto.randomUUID().slice(0, 8);
+          const waitTimeout = Math.min(timeout || 120, 300); // max 5 min
 
           updateStatus("busy");
 
@@ -329,8 +331,26 @@ function startHttpServer(port: number) {
             },
           });
 
-          res.writeHead(200, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ status: "delivered", msg_id: id }));
+          if (wait) {
+            // Long-poll: wait for response file to appear
+            const respPath = join(RESPONSES_DIR, `${id}.json`);
+            const deadline = Date.now() + waitTimeout * 1000;
+            const poll = setInterval(() => {
+              if (existsSync(respPath)) {
+                clearInterval(poll);
+                const data = readFileSync(respPath, "utf-8");
+                res.writeHead(200, { "Content-Type": "application/json" });
+                res.end(data);
+              } else if (Date.now() > deadline) {
+                clearInterval(poll);
+                res.writeHead(408, { "Content-Type": "application/json" });
+                res.end(JSON.stringify({ status: "timeout", msg_id: id }));
+              }
+            }, 2000);
+          } else {
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ status: "delivered", msg_id: id }));
+          }
         } catch (e: any) {
           res.writeHead(400, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ error: e.message }));
