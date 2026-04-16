@@ -50,7 +50,11 @@ source ~/.zshrc
 ### Method 3: Claude Code Plugin
 
 ```bash
-claude /install github:swl521/agent-hub-channel
+# Add marketplace source
+/plugin marketplace add swl521/agent-hub-channel
+
+# Install plugin
+/plugin install agent-hub-channel@swl521-agent-hub-channel
 ```
 
 Then add the shell alias:
