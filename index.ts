@@ -13,6 +13,7 @@ import { createServer, type Server as HttpServer } from "http";
 const HUB_DIR = join(process.env.HOME!, ".claude", "agent-hub");
 const REGISTRY_FILE = join(HUB_DIR, "registry.json");
 const RESPONSES_DIR = join(HUB_DIR, "responses");
+const CONFIG_FILE = join(HUB_DIR, "config.json");
 const PORT_RANGE_START = 18001;
 const PORT_RANGE_END = 18099;
 
@@ -86,6 +87,38 @@ function updateStatus(status: string) {
     }
   } catch {
     // best effort
+  }
+}
+
+function readConfig(): Record<string, any> {
+  try {
+    return JSON.parse(readFileSync(CONFIG_FILE, "utf-8"));
+  } catch {
+    return {};
+  }
+}
+
+async function pushNotify(session: string, result: string) {
+  const config = readConfig();
+  const ntfyTopic = config.ntfy_topic || process.env.AGENT_HUB_NTFY_TOPIC;
+  if (!ntfyTopic) return;
+
+  const ntfyServer = config.ntfy_server || "https://ntfy.sh";
+  const title = `[${session}] task done`;
+  const body = result.length > 200 ? result.slice(0, 200) + "..." : result;
+
+  try {
+    await fetch(`${ntfyServer}/${ntfyTopic}`, {
+      method: "POST",
+      headers: {
+        Title: title,
+        Priority: "default",
+        Tags: "robot",
+      },
+      body,
+    });
+  } catch {
+    // best effort — don't block on push failure
   }
 }
 
@@ -213,6 +246,7 @@ mcp.setRequestHandler(CallToolRequestSchema, async (req) => {
     const filePath = join(RESPONSES_DIR, `${msg_id}.json`);
     writeFileSync(filePath, JSON.stringify(response, null, 2));
     updateStatus("idle");
+    await pushNotify(sessionName, result);
     return { content: [{ type: "text", text: `已回复消息 ${msg_id}` }] };
   }
 

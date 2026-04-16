@@ -171,6 +171,24 @@ curl -s http://127.0.0.1:{port}/status
 | CLI Guide | `~/.claude/CLAUDE.md` | Teaches CLI how to use agent-hub |
 | Dispatch | Dispatch Customize | Teaches Dispatch how to call agent-hub |
 
+## Push Notifications (Optional)
+
+Get instant push notifications on your phone when a CLI session completes a task.
+
+1. Install [ntfy](https://ntfy.sh) app on your phone (iOS / Android)
+2. Subscribe to a topic in the app (e.g. `my-hub`)
+3. Create config file:
+   ```bash
+   echo '{"ntfy_topic":"my-hub"}' > ~/.claude/agent-hub/config.json
+   ```
+
+Self-hosted ntfy server:
+```bash
+echo '{"ntfy_topic":"my-hub","ntfy_server":"https://your-server.com"}' > ~/.claude/agent-hub/config.json
+```
+
+Or use environment variable: `export AGENT_HUB_NTFY_TOPIC=my-hub`
+
 ## Troubleshooting
 
 | Problem | Cause | Fix |

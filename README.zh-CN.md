@@ -164,6 +164,24 @@ curl -s http://127.0.0.1:{端口}/status
     └── {msg_id}.json
 ```
 
+## 推送通知（可选）
+
+CLI 完成任务后即时推送通知到手机，不再依赖轮询。
+
+1. 手机安装 [ntfy](https://ntfy.sh) app（iOS / Android）
+2. 在 app 中订阅一个 topic（如 `my-hub`）
+3. 创建配置文件：
+   ```bash
+   echo '{"ntfy_topic":"my-hub"}' > ~/.claude/agent-hub/config.json
+   ```
+
+自建 ntfy 服务器：
+```bash
+echo '{"ntfy_topic":"my-hub","ntfy_server":"https://你的服务器"}' > ~/.claude/agent-hub/config.json
+```
+
+也可以用环境变量：`export AGENT_HUB_NTFY_TOPIC=my-hub`
+
 ## 故障排查
 
 | 问题 | 原因 | 解决 |

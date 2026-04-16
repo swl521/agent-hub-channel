@@ -109,10 +109,29 @@ fi
 echo ""
 echo "=== 安装完成 ==="
 echo ""
+
+# ── 推送通知配置（可选）────────────────────────────────────────────
+CONFIG_FILE="$HUB_DIR/config.json"
+if [ ! -f "$CONFIG_FILE" ]; then
+    echo "=== 推送通知配置（可选）==="
+    echo ""
+    echo "  agent-hub 支持通过 ntfy.sh 推送任务完成通知到手机。"
+    echo "  1. 手机安装 ntfy app (https://ntfy.sh)"
+    echo "  2. 在 app 中订阅一个 topic（如 my-hub）"
+    echo "  3. 运行以下命令启用推送："
+    echo ""
+    echo "     echo '{\"ntfy_topic\":\"你的topic\"}' > $CONFIG_FILE"
+    echo ""
+    echo "  也可以用自建 ntfy 服务器："
+    echo "     echo '{\"ntfy_topic\":\"你的topic\",\"ntfy_server\":\"https://你的服务器\"}' > $CONFIG_FILE"
+    echo ""
+fi
+
 echo "下一步："
 echo "  1. 执行 source ~/.zshrc 或重新打开终端"
 echo "  2. 用 claude 启动 CLI（alias 自动加载 channel）"
 echo "  3. 在 Dispatch Customize 中添加 agent-hub 操作说明"
+echo "  4.（可选）配置 ntfy 推送通知"
 echo ""
 echo "验证："
 echo "  启动 claude 后查看 cat ~/.claude/agent-hub/registry.json"
