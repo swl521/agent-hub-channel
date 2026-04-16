@@ -1,5 +1,7 @@
 # Agent Hub Channel
 
+[中文说明](./README.zh-CN.md)
+
 Multi-CLI session dispatch system for [Claude Code](https://claude.ai/code). Control multiple Claude Code CLI sessions from your phone (Dispatch) or other CLI sessions via MCP Channel protocol.
 
 ## Architecture
