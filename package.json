@@ -1,0 +1,13 @@
+{
+  "name": "agent-hub-channel",
+  "version": "0.1.0",
+  "description": "Claude Code Channel plugin for multi-CLI session dispatch",
+  "type": "module",
+  "main": "index.ts",
+  "scripts": {
+    "start": "bun run index.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0"
+  }
+}
