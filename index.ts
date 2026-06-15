@@ -394,6 +394,23 @@ async function main() {
   // Register in hub
   register(sessionName, assignedPort);
 
+  // 心跳:每 10 秒确保自己仍在 registry 里。被清空/被重建/daemon 重启后都能自愈,
+  // 让「答鸭 / daemon / 终端」谁先开、谁重启都不乱(无需固定开启顺序)。
+  const heartbeat = () => {
+    try {
+      const reg = readRegistry();
+      const mine = reg.sessions[sessionName];
+      if (!mine || mine.sessionId !== sessionId) {
+        register(sessionName, assignedPort); // 不在表里(被清/被顶名)→ 重新登记
+      } else {
+        mine.lastSeen = new Date().toISOString();
+        writeRegistry(reg);
+      }
+    } catch { /* registry 暂时坏/被占用,下个心跳再来 */ }
+  };
+  const heartbeatTimer = setInterval(heartbeat, 10_000);
+  heartbeatTimer.unref?.();
+
   // Log to stderr (visible in debug, not in MCP stdio)
   console.error(
     `[agent-hub] Registered "${sessionName}" on port ${assignedPort}`
